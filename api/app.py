@@ -120,11 +120,14 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
         Dictionary of JSON topic sentiment data
 
     """
-    logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
-    if not freq:
+    logger.info('Returning a dictionary of dataframes. Each dataframe corresponds to the sentiment found for a '
+                'respective section')
+    if freq is None:
         logger.info(
-            'No frequency specified, all documents will be returned for post-processing. This may block interrupt your browser')
-        return {s: v.to_json(orient='records') for s, v in topics_and_docs_sentiment.items()}
+            'No frequency specified, all documents will be returned for post-processing. This may block or interrupt '
+            'your browser')
+        response_json = {s: v.to_json(orient='records') for s, v in topics_and_docs_sentiment.items()}
+        response_json['frequency'] = 'No frequency specified'
     else:
         logger.info(f'Using {freq} to aggregate sentiment across time.')
         agg_sentiment = {}
@@ -133,7 +136,9 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
                                                                        infer_datetime_format=True)
             agg_sentiment[s] = topics_and_docs_sentiment[s].set_index('Timestamp').groupby(['Topic', 'Name'])[
                 'sentiment_sigma_fsa'].resample(rule=freq).agg([np.mean, np.median]).reset_index(level=(0, 1, 2,))
-        return {s: v.to_json(orient='records') for s, v in agg_sentiment.items()}
+        response_json = {s: v.to_json(orient='records') for s, v in agg_sentiment.items()}
+        response_json['frequency'] = freq
+    return response_json
 
 
 @app.get("/get_topics_url")

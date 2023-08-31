@@ -43,6 +43,19 @@ def test_get_topics_time_count():
     # We include the topic with the outliers.
     assert df_test['Topic'].nunique() == top_N + 1
 
+def test_get_topics_sentiment():
+    """Tests the get_topics_sentiment endpoint."""
+    response = client.get("/get_topics_sentiment")
+    assert response.status_code == 200
+    freq = '3M'
+    response = client.get(f"/get_topics_sentiment?freq={freq}")
+    assert response.status_code == 200
+    text = response.json()
+    assert text['frequency'] == freq
+    # See if in fact we get 20 unique topics.
+    #df_test = pd.read_json(text['Section1'], orient='records')
+    # We include the topic with the outliers.
+    #assert df_test['Topic'].nunique() == top_N + 1
 
 def test_update_database(url: str = "https://www.federalreserve.gov"):
     """Tests if a given url is added to the database."""
