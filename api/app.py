@@ -52,7 +52,22 @@ async def route3():
 
 
 @app.get("/get_topics_time")
-async def get_topics_time(freq=None, top_n=None):
+async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, pd.DataFrame]:
+    """Return dictionary of topic dataframes over time.
+
+    Parameters
+    ----------
+    freq : str, optional
+        Resample frequency for aggregation. Needs to be compatible with Pandas resample.
+    top_n : int, optional
+        Only return top n topics
+
+    Returns
+    -------
+    dict of {str : pd.DataFrame}
+        Dictionary of topic dataframes
+
+    """
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
     with open("../api/assets/topics_overtime.json", "r") as f:
         sections_topics_time = json.load(f)
@@ -75,7 +90,20 @@ async def get_topics_time(freq=None, top_n=None):
             logger.info('No top_n specified, all topics will be returned.')
 
 @app.get("/get_topics_sentiment")
-async def get_topics_sentiment(freq=None):
+async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
+    """Return dictionary of topic sentiment dataframes.
+
+    Parameters
+    ----------
+    freq : str, optional
+        Resample frequency. Needs to be compatible with Pandas resample.
+
+    Returns
+    -------
+    dict of {str : str}
+        Dictionary of JSON topic sentiment data
+
+    """
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
     if not freq:
         logger.info('No frequency specified, all documents will be returned for post-processing. This may block interrupt your browser')
