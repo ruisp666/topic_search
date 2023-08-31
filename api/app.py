@@ -13,9 +13,12 @@ from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 
 from bertopic import BERTopic
-sections = [f'Section{s}' for s in ['1', '1A', '7'] ]
-topic_models = {s: BERTopic.load(f'../topic_models/topic_models_{s}', embedding_model='all-MiniLM-L6-v2') for s in sections}
-topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s,tm in topic_models.items()}
+
+sections = [f'Section{s}' for s in ['1', '1A', '7']]
+topic_models = {s: BERTopic.load(f'../topic_models/topic_models_{s}', embedding_model='all-MiniLM-L6-v2') for s in
+                sections}
+topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s, tm in
+                     topic_models.items()}
 
 # Create a global logger
 logger = logging.getLogger('logger')
@@ -25,21 +28,28 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
-# Load the topics_and_docs_sentiment json
+# Load the topics_and_docs_sentiment json at the start of the application
 with open("../api/assets/topics_and_docs_sentiment.json", "r") as f:
     topics_and_docs_sentiment = json.load(f)
     topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in topics_and_docs_sentiment.items()}
+
+# Load the sections_topics_time json at the start of the application
+with open("../api/assets/topics_overtime.json", "r") as f:
+    sections_topics_time = json.load(f)
+
+
 app = FastAPI()
 
+# Establish the connection and create the SQLite table if not existing
 connection = sqlite3.connect('app/db/topics-url.db')
 cursor = connection.cursor()
-
-
 cursor.execute('''
           CREATE TABLE IF NOT EXISTS data
           (url text, topics_section1 text, topics_section2 text, topics_section3 text)
           ''')
-mapping_db = {'Section1':'topics_section1', 'Section1A':'topics_section2', 'Section7':'topics_section3'}
+mapping_db = {'Section1': 'topics_section1', 'Section1A': 'topics_section2', 'Section7': 'topics_section3'}
+
+
 @app.get("/")
 async def root():
     return {"message": "Please use the /docs endpoint to view the API documentation"}
@@ -47,7 +57,7 @@ async def root():
 
 @app.get("/get_topics_time")
 async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]:
-    """Return dictionary of topic dataframes over time.
+    """Return dictionary of jsonnified dataframes with evolution of the topic frequency over time.
 
     Parameters
     ----------
@@ -66,23 +76,34 @@ async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
     with open("../api/assets/topics_overtime.json", "r") as f:
         sections_topics_time = json.load(f)
-    response = {s: v for s,v in sections_topics_time.items()}
+    response = {s: v for s, v in sections_topics_time.items()}
     if not freq and not top_n:
         logger.info('No frequency or top_n specified, all topics will be returned.')
         return response
     else:
-        if freq:
+        response_json = {}
+        sections_topics_time = {k: pd.read_json(v) for k, v in sections_topics_time.items()}
+    if freq:
             logger.info(f'Using {freq} to aggregate across time. This may take some time.')
-            logger.info('Topics will be returned as a dictionary of dataframes')
-            for s, v in sections_topics_time():
-                response[s] = v.set_index('Timestamp').groupby(['Topic', 'Words', 'Name'])['Frequency'].resample(
-                    rule=freq).sum().reset_index(level=(0, 1, 2, 3))
-        if top_n:
-            for s, v in response.items():
+            response_json['frequency'] = freq
+            for s, v in sections_topics_time.items():
+                response[s] = v.set_index('Timestamp').groupby(['Topic', 'Words'])['Frequency'].resample(
+                    rule=freq).sum().reset_index(level=(0, 1, 2))
+    if top_n:
+        logger.info(f'Top {top_n} topics will be returned. Topic -1 contains the outliers.')
+        response_json['top_n'] = str(top_n)
+        # If there is no frequency parameter, we simply filter for the top topics
+        if not freq:
+            for s, v in sections_topics_time.items():
                 response[s] = v.loc[v['Topic'].isin(list(range(-1, top_n)))]
-            logger.info(f'Top {top_n} topics will be returned. Topic -1 contains the outliers.')
+        # We can reuse response from above
         else:
-            logger.info('No top_n specified, all topics will be returned.')
+            for s, v in response.items():
+                response[s] = response[s].loc[response[s]['Topic'].isin(list(range(-1, top_n)))]
+    for s in sections:
+        response_json[s] = response[s].to_json(orient='records')
+    return response_json
+
 
 @app.get("/get_topics_sentiment")
 async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
@@ -101,20 +122,23 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
     """
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
     if not freq:
-        logger.info('No frequency specified, all documents will be returned for post-processing. This may block interrupt your browser')
-        return {s: v.to_json(orient='records') for s,v in topics_and_docs_sentiment.items()}
+        logger.info(
+            'No frequency specified, all documents will be returned for post-processing. This may block interrupt your browser')
+        return {s: v.to_json(orient='records') for s, v in topics_and_docs_sentiment.items()}
     else:
         logger.info(f'Using {freq} to aggregate sentiment across time.')
         agg_sentiment = {}
         for s in topics_and_docs_sentiment:
-            topics_and_docs_sentiment[s]['Timestamp'] = pd.to_datetime(topics_and_docs_sentiment[s]['Timestamp'], infer_datetime_format=True)
+            topics_and_docs_sentiment[s]['Timestamp'] = pd.to_datetime(topics_and_docs_sentiment[s]['Timestamp'],
+                                                                       infer_datetime_format=True)
             agg_sentiment[s] = topics_and_docs_sentiment[s].set_index('Timestamp').groupby(['Topic', 'Name'])[
                 'sentiment_sigma_fsa'].resample(rule=freq).agg([np.mean, np.median]).reset_index(level=(0, 1, 2,))
-        return {s: v.to_json(orient='records') for s,v in agg_sentiment.items()}
+        return {s: v.to_json(orient='records') for s, v in agg_sentiment.items()}
 
 
 @app.get("/get_topics_url")
-async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm') -> Dict[str, list]:
+async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm') -> \
+Dict[str, list]:
     """Return the topics found in the text content of a given url
 
     Parameters
@@ -128,9 +152,10 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
         Dictionary of JSON topic url data
 
     """
-    #cursor.execute('INSERT INTO data VALUES (:url)', url)
+    # cursor.execute('INSERT INTO data VALUES (:url)', url)
     loader = WebBaseLoader(url)
-    splitter = SentenceTransformersTokenTextSplitter(chunk_overlap=0, model_name='sentence-transformers/all-MiniLM-L6-v2')
+    splitter = SentenceTransformersTokenTextSplitter(chunk_overlap=0,
+                                                     model_name='sentence-transformers/all-MiniLM-L6-v2')
     page = loader.load()
     docs = splitter.split_documents(page)
     docs_str = [doc.page_content for doc in docs]
@@ -141,14 +166,16 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
         topics_doc[s] = list(set(np.vectorize(topics_names_dict[s].get)(topics)))
     # Make strings of the lists
     data_to_insert = {}
-    for s,k in mapping_db.items():
-        print(s,k)
+    for s, k in mapping_db.items():
+        print(s, k)
         data_to_insert[k] = ''.join(topics_doc[s])
     data_to_insert['url'] = url
-    cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)', data_to_insert)
+    cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)',
+                   data_to_insert)
     connection.commit()
 
     return topics_doc
+
 
 if __name__ == '__main__':
     uvicorn.run(app, port=8000)
