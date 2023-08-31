@@ -31,15 +31,9 @@ with open("../api/assets/topics_and_docs_sentiment.json", "r") as f:
     topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in topics_and_docs_sentiment.items()}
 app = FastAPI()
 
-connection = sqlite3.connect('app/db/topics-url-db.db')
+connection = sqlite3.connect('app/db/topics-url.db')
 cursor = connection.cursor()
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY,
-      message TEXT NOT NULL
-    )
-''')
 
 cursor.execute('''
           CREATE TABLE IF NOT EXISTS data
@@ -49,23 +43,6 @@ mapping_db = {'Section1':'topics_section1', 'Section1A':'topics_section2', 'Sect
 @app.get("/")
 async def root():
     return {"message": "Please use the /docs endpoint to view the API documentation"}
-
-@app.get("/route1")
-async def route1():
-    message = {"message": "This is route 1"}
-
-    cursor.execute('''
-        INSERT INTO messages (message) VALUES (?)
-    ''', (message['message'],))
-
-    connection.commit()
-    
-    return message
-
-
-@app.get("/route3")
-async def route3():
-    return {"message": "This is a banana"}
 
 
 @app.get("/get_topics_time")
@@ -167,7 +144,6 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
     for s,k in mapping_db.items():
         print(s,k)
         data_to_insert[k] = ''.join(topics_doc[s])
-    print(data_to_insert)
     data_to_insert['url'] = url
     cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)', data_to_insert)
     connection.commit()
