@@ -2,6 +2,7 @@
 import logging
 from typing import Dict
 
+import numpy as np
 import uvicorn
 from fastapi import FastAPI
 import pandas as pd
@@ -16,8 +17,10 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
-
-
+# Load the topics_and_docs_sentiment json
+with open("assets/topics_and_docs_sentiment.json", "r") as f:
+    topics_and_docs_sentiment = json.load(f)
+    topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in topics_and_docs_sentiment.items()}
 app = FastAPI()
 
 connection = sqlite3.connect('app/db/topics-url-db.db')
@@ -51,7 +54,7 @@ async def route3():
 @app.get("/get_topics_time")
 async def get_topics_time(freq=None, top_n=None):
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
-    with open("../data/topics_overtime.json", "r") as f:
+    with open("../api/assets/topics_overtime.json", "r") as f:
         sections_topics_time = json.load(f)
     response = {s: v for s,v in sections_topics_time.items()}
     if not freq and not top_n:
@@ -71,6 +74,20 @@ async def get_topics_time(freq=None, top_n=None):
         else:
             logger.info('No top_n specified, all topics will be returned.')
 
+@app.get("/get_topics_sentiment")
+async def get_topics_sentiment(freq=None):
+    logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
+    if not freq:
+        logger.info('No frequency specified, all documents will be returned for post-processing. This may block interrupt your browser')
+        return {s: v.to_json(orient='records') for s,v in topics_and_docs_sentiment.items()}
+    else:
+        logger.info(f'Using {freq} to aggregate sentiment across time.')
+        agg_sentiment = {}
+        for s in topics_and_docs_sentiment:
+            topics_and_docs_sentiment[s]['Timestamp'] = pd.to_datetime(topics_and_docs_sentiment[s]['Timestamp'], infer_datetime_format=True)
+            agg_sentiment[s] = topics_and_docs_sentiment[s].set_index('Timestamp').groupby(['Topic', 'Name'])[
+                'sentiment_sigma_fsa'].resample(rule=freq).agg([np.mean, np.median]).reset_index(level=(0, 1, 2,))
+        return {s: v.to_json(orient='records') for s,v in agg_sentiment.items()}
 
 if __name__ == '__main__':
     uvicorn.run(app, port=8000)
