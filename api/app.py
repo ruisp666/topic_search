@@ -18,7 +18,7 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 # Load the topics_and_docs_sentiment json
-with open("assets/topics_and_docs_sentiment.json", "r") as f:
+with open("../api/assets/topics_and_docs_sentiment.json", "r") as f:
     topics_and_docs_sentiment = json.load(f)
     topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in topics_and_docs_sentiment.items()}
 app = FastAPI()
@@ -32,6 +32,10 @@ cursor.execute('''
       message TEXT NOT NULL
     )
 ''')
+
+@app.get("/")
+async def root():
+    return {"message": "Please use the /docs endpoint to view the API documentation"}
 
 @app.get("/route1")
 async def route1():
@@ -52,20 +56,21 @@ async def route3():
 
 
 @app.get("/get_topics_time")
-async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, pd.DataFrame]:
+async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]:
     """Return dictionary of topic dataframes over time.
 
     Parameters
     ----------
     freq : str, optional
         Resample frequency for aggregation. Needs to be compatible with Pandas resample.
+
     top_n : int, optional
         Only return top n topics
 
     Returns
     -------
-    dict of {str : pd.DataFrame}
-        Dictionary of topic dataframes
+    dict of {str : str}
+        Dictionary of topic dataframes in json format
 
     """
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
