@@ -3,3 +3,4 @@ Notebooks/topic_analysis.ipynb filter=lfs diff=lfs merge=lfs -text
 assets/ filter=lfs diff=lfs merge=lfs -text
 api/assets filter=lfs diff=lfs merge=lfs -text
 api/assets/topics_and_docs_sentiment.json filter=lfs diff=lfs merge=lfs -text
+3.[[:space:]]Topic[[:space:]]Discovery.ipynb filter=lfs diff=lfs merge=lfs -text
