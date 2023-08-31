@@ -9,6 +9,14 @@ import pandas as pd
 import json
 import sqlite3
 
+from langchain.document_loaders import WebBaseLoader
+from langchain.text_splitter import SentenceTransformersTokenTextSplitter
+
+from bertopic import BERTopic
+sections = [f'Section{s}' for s in ['1', '1A', '7'] ]
+topic_models = {s: BERTopic.load(f'../topic_models/topic_models_{s}', embedding_model='all-MiniLM-L6-v2') for s in sections}
+topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s,tm in topic_models.items()}
+
 # Create a global logger
 logger = logging.getLogger('logger')
 logger.setLevel(logging.INFO)
@@ -33,6 +41,11 @@ cursor.execute('''
     )
 ''')
 
+cursor.execute('''
+          CREATE TABLE IF NOT EXISTS data
+          (url text, topics_section1 text, topics_section2 text, topics_section3 text)
+          ''')
+mapping_db = {'Section1':'topics_section1', 'Section1A':'topics_section2', 'Section7':'topics_section3'}
 @app.get("/")
 async def root():
     return {"message": "Please use the /docs endpoint to view the API documentation"}
@@ -121,6 +134,45 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
             agg_sentiment[s] = topics_and_docs_sentiment[s].set_index('Timestamp').groupby(['Topic', 'Name'])[
                 'sentiment_sigma_fsa'].resample(rule=freq).agg([np.mean, np.median]).reset_index(level=(0, 1, 2,))
         return {s: v.to_json(orient='records') for s,v in agg_sentiment.items()}
+
+
+@app.get("/get_topics_url")
+async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm') -> Dict[str, list]:
+    """Return the topics found in the text content of a given url
+
+    Parameters
+    ----------
+    url : str, optional
+        URL to scrape.
+
+    Returns
+    -------
+    dict of {str : str}
+        Dictionary of JSON topic url data
+
+    """
+    #cursor.execute('INSERT INTO data VALUES (:url)', url)
+    loader = WebBaseLoader(url)
+    splitter = SentenceTransformersTokenTextSplitter(chunk_overlap=0, model_name='sentence-transformers/all-MiniLM-L6-v2')
+    page = loader.load()
+    docs = splitter.split_documents(page)
+    docs_str = [doc.page_content for doc in docs]
+    topics_doc = {}
+    for s, tm in topic_models.items():
+        topics, _ = tm.transform(docs_str)
+        # Use set to keep uniques
+        topics_doc[s] = list(set(np.vectorize(topics_names_dict[s].get)(topics)))
+    # Make strings of the lists
+    data_to_insert = {}
+    for s,k in mapping_db.items():
+        print(s,k)
+        data_to_insert[k] = ''.join(topics_doc[s])
+    print(data_to_insert)
+    data_to_insert['url'] = url
+    cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)', data_to_insert)
+    connection.commit()
+
+    return topics_doc
 
 if __name__ == '__main__':
     uvicorn.run(app, port=8000)
