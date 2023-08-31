@@ -1,9 +1,12 @@
 # api.py
 import logging
+from typing import Dict
+
 import uvicorn
 from fastapi import FastAPI
 import pandas as pd
 import json
+import sqlite3
 
 # Create a global logger
 logger = logging.getLogger('logger')
@@ -17,11 +20,27 @@ logger.addHandler(stream_handler)
 
 app = FastAPI()
 
+connection = sqlite3.connect('app/db/topics-url-db.db')
+cursor = connection.cursor()
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY,
+      message TEXT NOT NULL
+    )
+''')
 
 @app.get("/route1")
 async def route1():
-    return {"message": "This is route 1"}
+    message = {"message": "This is route 1"}
 
+    cursor.execute('''
+        INSERT INTO messages (message) VALUES (?)
+    ''', (message['message'],))
+
+    connection.commit()
+    
+    return message
 
 
 @app.get("/route3")
