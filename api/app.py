@@ -13,9 +13,23 @@ from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 
 from bertopic import BERTopic
-
+import os
 sections = [f'Section{s}' for s in ['1', '1A', '7']]
-topic_models = {s: BERTopic.load(f'../topic_models/topic_models_{s}', embedding_model='all-MiniLM-L6-v2') for s in
+
+cwd = os.getcwd()
+print('cwd ', cwd)
+print('dir', os.listdir(cwd))
+
+
+
+if os.environ.get('TOPIC_MODELS_PATH') is not None:
+    model_path = '/app/topic_models'
+    print(os.listdir(model_path))
+else:
+    model_path = '../topic_models'
+
+print(model_path)
+topic_models = {s: BERTopic.load(os.path.join(model_path, f'topic_models_{s}'), embedding_model='all-MiniLM-L6-v2') for s in
                 sections}
 topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s, tm in
                      topic_models.items()}
@@ -28,20 +42,31 @@ stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
+if os.environ.get('TOPIC_MODELS_PATH') is not None:
+    assets_path = '/app/api/assets'
+    print(os.listdir(model_path))
+else:
+    assets_path = '../api/assets'
 # Load the topics_and_docs_sentiment json at the start of the application
-with open("../api/assets/topics_and_docs_sentiment.json", "r") as f:
+with open(os.path.join(assets_path, "topics_and_docs_sentiment.json"), "r") as f:
     topics_and_docs_sentiment = json.load(f)
     topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in topics_and_docs_sentiment.items()}
 
 # Load the sections_topics_time json at the start of the application
-with open("../api/assets/topics_overtime.json", "r") as f:
+with open(os.path.join(assets_path, "topics_overtime.json"), "r") as f:
     sections_topics_time = json.load(f)
 
 
 app = FastAPI()
 
+if os.environ.get('TOPIC_MODELS_PATH') is not None:
+    db_path = '/app/api/app/db/topics-url.db'
+    print(os.listdir(model_path))
+else:
+    db_path = 'app/db/topics-url.db'
+
 # Establish the connection and create the SQLite table if not existing
-connection = sqlite3.connect('app/db/topics-url.db')
+connection = sqlite3.connect(db_path)
 cursor = connection.cursor()
 cursor.execute('''
           CREATE TABLE IF NOT EXISTS data
@@ -74,7 +99,7 @@ async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]
 
     """
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
-    with open("../api/assets/topics_overtime.json", "r") as f:
+    with open(os.path.join(assets_path,"topics_overtime.json"), "r") as f:
         sections_topics_time = json.load(f)
     response = {s: v for s, v in sections_topics_time.items()}
     if not freq and not top_n:
@@ -183,4 +208,4 @@ Dict[str, list]:
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, port=8000)
+    uvicorn.run(app, port=8080)

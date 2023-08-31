@@ -4,7 +4,7 @@
 # If you need more help, visit the Dockerfile reference guide at
 # https://docs.docker.com/engine/reference/builder/
 
-ARG PYTHON_VERSION=3.10.12
+ARG PYTHON_VERSION=3.9
 FROM python:${PYTHON_VERSION}-slim
 
 RUN apt-get update && \
@@ -20,6 +20,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
+# Dweal with numba cache problems
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+
+ENV TOPIC_MODELS_PATH=topic_models
+
 WORKDIR /app
 
 # Create a non-privileged user that the api will run under.
@@ -34,6 +39,9 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
+RUN mkdir -p /nonexistent
+
+RUN chmod -R 777 /nonexistent
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
@@ -53,7 +61,9 @@ USER appuser
 
 # Copy the source code into the container.
 COPY . .
-COPY api/ /api
+COPY topic_models ./app
+COPY api/app/db/topics-url-db.db ./app/api/app/db/topics-url-db.db
+
 # Expose the port that the application listens on.
 EXPOSE 8000
 
