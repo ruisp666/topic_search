@@ -44,12 +44,13 @@ It covers approximately 500 companies over a period of 4 years. A sample row can
 ### Pre-Processing and Topic Modelling
 For the top modelling we used [bertopic](https://maartengr.github.io/BERTopic/index.html#quick-start) with the default sentence transformer. We then used langchain token splitter to split the long texts into documents.
 For splitting we used the same sentence transformer as for the embeddings. We also took into consideration stop words when building the topics. While the stop words do not enter the topics,
-they are not excluded when tokenizing or encoding to preserve meaning. The fitted models can be found [here](../topic_models)
+they are not excluded when tokenizing or encoding to preserve meaning. The fitted models can be found [here](topic_models).
+
 
 ### Testing
 
-A suite of [tests](api-test_routes.py) was designed to ensure the functionality and consistency of the endpoints. As of this version, they all pass for the local version. 
-
+A suite of [tests](api/test_routes.py) was designed to ensure the functionality and consistency of the endpoints. As of this version, they all pass for the local version. 
+In the next version we will add tests specifically for the docker container.
 ### Further Development
 In the next versions of this web service we will add more unit and client tests. We will also add another model to consider a single topic modelling for all the sections.
 
