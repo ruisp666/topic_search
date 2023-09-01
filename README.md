@@ -2,7 +2,7 @@
 
 This repo contains a series of utilities that
 allow the extraction of topics from three sections of the annual filings for a range of approximately 500 companies and for a period of 4 years.
-The sections included in the raw data are the following, as per the [SEC guideline](reada10k.pdf).
+The sections included in the raw data are the following, as per the [SEC guideline](reada10k.pdf):
 
 > *Item 1
 “Business” requires a description of the company’s business, including its main products and services,
@@ -30,20 +30,21 @@ approach to each of the sections.
 
 ### Notebooks
 
-There are 5 notebooks in this repo
+There are 5 [notebooks](Notebooks) in this repo excluding the user guide. You can refer to the folder for more information. 
 
 ### Organization of the repo
-The repo is composed of two basic units: Four explanatory notebooks and an api with multiple endpoints with a [User guide](api/User-Guide.ipynb).
+The repo is composed of two basic units: Five exploratory notebooks and an api with multiple endpoints with a [user guide](api/User-Guide.ipynb).
 It also contains the dockerfiles and other files required for a deployment in docker, including a blank database.
 
 ### Raw Data Used
-The raw data is a table with timestamps, date of filling, the raw text corresponding to a particular filed 10-k for Items1, ItemsA and Item7 of the 10-k.
+The raw data is a table with timestamps, date of filling, the raw text corresponding to a particular filed 10-k for Items1, ItemsA and Item7 of the 10-k a,d other details such as
+the ticker, or the link to filling details. 
 It covers approximately 500 companies over a period of 4 years. A sample row can be seen [here](data_sample.csv).
 
 ### Pre-Processing and Topic Modelling
 For the top modelling we used [bertopic](https://maartengr.github.io/BERTopic/index.html#quick-start) with the default sentence transformer. We then used langchain token splitter to split the long texts into documents.
 For splitting we used the same sentence transformer as for the embeddings. We also took into consideration stop words when building the topics. While the stop words do not enter the topics,
-they are not excluded when tokenizing or encoding to preserve meaning.
+they are not excluded when tokenizing or encoding to preserve meaning. The fitted models can be found [here](../topic_models)
 
 ### Testing
 
