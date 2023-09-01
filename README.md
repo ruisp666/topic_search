@@ -46,6 +46,11 @@ For the top modelling we used [bertopic](https://maartengr.github.io/BERTopic/in
 For splitting we used the same sentence transformer as for the embeddings. We also took into consideration stop words when building the topics. While the stop words do not enter the topics,
 they are not excluded when tokenizing or encoding to preserve meaning. The fitted models can be found [here](topic_models/).
 
+### To use in Docker
+To deploy in Docker, we need to build the image which I called app_topics. Then we mount a volume topics-url-db. I then used the command:
+```shell
+docker run --publish 8000:8000 --mount type=volume,src=topics-url-db,target=/app app_topics 
+```
 
 ### Testing
 
