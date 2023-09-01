@@ -1,11 +1,8 @@
-# Topics in 10 K fillings 
+# Modelling topics in SEC 10-K fillings 
 
 This repo contains a series of utilities that
-allow the extraction of topics from three sections of the annual filings for a range of approximately 500 companies and for a period of 4 years. 
-The target user for this application can  follow the [User Guide]("api/User Guide.ipynb") to get started with this web service.
-
-
-The sections are the following, as per the [SEC guideline](reada10k.pdf)
+allow the extraction of topics from three sections of the annual filings for a range of approximately 500 companies and for a period of 4 years.
+The sections included in the raw data are the following, as per the [SEC guideline](reada10k.pdf).
 
 > *Item 1
 “Business” requires a description of the company’s business, including its main products and services,
@@ -26,15 +23,22 @@ In practice, this section focuses on the risks themselves, not how the company a
 > This section, known as the MD&A for short, allows company management to tell its story in its own words.*
 > 
 
+### Modelling approach
+Since each of the above items relates to different aspects of a company, we have chosen to model topics for each of those.
+We could have joined all the text and create a unique model, but we believe that having 3 models allows a more fine-tuned 
+approach to each of the sections. 
+
 ### Notebooks
 
+There are 5 notebooks in this repo
+
 ### Organization of the repo
-The repo is composed of two basic units: Four explanatory notebooks and an api with multiple endpoints with a [tutorial]("api/User Guide.ipynb").
+The repo is composed of two basic units: Four explanatory notebooks and an api with multiple endpoints with a [User guide](api/User-Guide.ipynb).
 It also contains the dockerfiles and other files required for a deployment in docker, including a blank database.
 
 ### Raw Data Used
 The raw data is a table with timestamps, date of filling, the raw text corresponding to a particular filed 10-k for Items1, ItemsA and Item7 of the 10-k.
-It covers approximately 500 companies over a period of 4 years.
+It covers approximately 500 companies over a period of 4 years. A sample row can be seen [here](data_sample.csv).
 
 ### Pre-Processing and Topic Modelling
 For the top modelling we used [bertopic](https://maartengr.github.io/BERTopic/index.html#quick-start) with the default sentence transformer. We then used langchain token splitter to split the long texts into documents.
@@ -43,10 +47,10 @@ they are not excluded when tokenizing or encoding to preserve meaning.
 
 ### Testing
 
-A suite of [tests](test_routes.py) was designed to ensure the functionality and consistency of the endpoints. As of this version, they all pass for the local version. 
+A suite of [tests](api-test_routes.py) was designed to ensure the functionality and consistency of the endpoints. As of this version, they all pass for the local version. 
 
 ### Further Development
-In the next versions of this web service we will add more tests
+In the next versions of this web service we will add more unit and client tests. We will also add another model to consider a single topic modelling for all the sections.
 
 
 [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
