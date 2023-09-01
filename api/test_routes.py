@@ -1,12 +1,13 @@
+import requests
 from fastapi.testclient import TestClient
 import sqlite3
 
 from api.app import app
-from urllib import parse
 import pandas as pd
 
 client = TestClient(app)
 
+# Make sure the service is up before running the tests.
 
 def test_connection():
     """Tests if the service is up."""
@@ -55,13 +56,16 @@ def test_get_topics_sentiment():
     assert text['frequency'] == freq
 
 
-def test_update_database(url: str = "https://www.federalreserve.gov"):
+def test_update_database(url: str = "https://www.bloomberg.com"):
     """Tests if a given url is added to the database."""
-    response = client.post("/get_topics_url", json={"url": parse.quote(url)})
+    host = 'http://127.0.0.1:8080'
+    keep_all=False
+    requests.get(f"{host}/get_topics_url", params={'url': url, 'keep_all': f'{keep_all}'})
+
     # Check database was updated
     conn = sqlite3.connect('app/db/topics-url-db.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM data WHERE url="https://www.federalreserve.gov"')
+    cursor.execute('SELECT * FROM data WHERE url="https://www.bloomberg.com"')
     result = cursor.fetchone()
     assert result is not None
     assert result[0] == url

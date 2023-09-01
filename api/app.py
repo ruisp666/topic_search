@@ -14,18 +14,16 @@ from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 
 from bertopic import BERTopic
 import os
+
 sections = [f'Section{s}' for s in ['1', '1A', '7']]
-
-
-
-
 
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     model_path = '/app/topic_models'
 else:
     model_path = '../topic_models'
 
-topic_models = {s: BERTopic.load(os.path.join(model_path, f'topic_models_{s}'), embedding_model='all-MiniLM-L6-v2') for s in
+topic_models = {s: BERTopic.load(os.path.join(model_path, f'topic_models_{s}'), embedding_model='all-MiniLM-L6-v2') for
+                s in
                 sections}
 topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s, tm in
                      topic_models.items()}
@@ -52,12 +50,11 @@ with open(os.path.join(assets_path, "topics_and_docs_sentiment.json"), "r") as f
 with open(os.path.join(assets_path, "topics_overtime.json"), "r") as f:
     sections_topics_time = json.load(f)
 
-
 app = FastAPI()
 
 if os.environ.get('TOPIC_MODELS_PATH') is None:
     print('We are in local')
-    db_path = 'app/db/topics-url.db'
+    db_path = 'app/db/topics-url-db.db'
 else:
     print('We are in docker')
     db_path = 'app/db/data_docker.db'
@@ -97,7 +94,7 @@ async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]
 
     """
     logger.info('Returning a dictionary of dataframes. Each dataframe is a section')
-    with open(os.path.join(assets_path,"topics_overtime.json"), "r") as f:
+    with open(os.path.join(assets_path, "topics_overtime.json"), "r") as f:
         sections_topics_time = json.load(f)
     response = {s: v for s, v in sections_topics_time.items()}
     if not freq and not top_n:
@@ -107,11 +104,11 @@ async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]
         response_json = {}
         sections_topics_time = {k: pd.read_json(v) for k, v in sections_topics_time.items()}
     if freq:
-            logger.info(f'Using {freq} to aggregate across time. This may take some time.')
-            response_json['frequency'] = freq
-            for s, v in sections_topics_time.items():
-                response[s] = v.set_index('Timestamp').groupby(['Topic', 'Words'])['Frequency'].resample(
-                    rule=freq).sum().reset_index(level=(0, 1, 2))
+        logger.info(f'Using {freq} to aggregate across time. This may take some time.')
+        response_json['frequency'] = freq
+        for s, v in sections_topics_time.items():
+            response[s] = v.set_index('Timestamp').groupby(['Topic', 'Words'])['Frequency'].resample(
+                rule=freq).sum().reset_index(level=(0, 1, 2))
     if top_n:
         logger.info(f'Top {top_n} topics will be returned. Topic -1 contains the outliers.')
         response_json['top_n'] = str(top_n)
@@ -165,8 +162,9 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
 
 
 @app.get("/get_topics_url")
-async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm', keep_all: bool = False) -> \
-Dict[str, list]:
+async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm',
+                         keep_all: bool = False) -> \
+        Dict[str, list]:
     """Return the topics found in the text content of a given url
 
     Parameters
@@ -203,6 +201,7 @@ Dict[str, list]:
     cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)',
                    data_to_insert)
     connection.commit()
+    connection.close()
 
     return topics_doc
 

@@ -44,7 +44,7 @@ It covers approximately 500 companies over a period of 4 years. A sample row can
 ### Pre-Processing and Topic Modelling
 For the top modelling we used [bertopic](https://maartengr.github.io/BERTopic/index.html#quick-start) with the default sentence transformer. We then used langchain token splitter to split the long texts into documents.
 For splitting we used the same sentence transformer as for the embeddings. We also took into consideration stop words when building the topics. While the stop words do not enter the topics,
-they are not excluded when tokenizing or encoding to preserve meaning. The fitted models can be found [here](topic_models).
+they are not excluded when tokenizing or encoding to preserve meaning. The fitted models can be found [here](topic_models/).
 
 
 ### Testing
