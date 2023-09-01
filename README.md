@@ -2,7 +2,7 @@
 
 This repo contains a series of utilities that
 allow the extraction of topics from three sections of the annual filings for a range of approximately 500 companies and for a period of 4 years. 
-The target user for this application can  follow the [User Guide](api/User Guide.ipynb) to get started with this web service.
+The target user for this application can  follow the [User Guide]("api/User Guide.ipynb") to get started with this web service.
 
 
 The sections are the following, as per the [SEC guideline](reada10k.pdf)
@@ -29,7 +29,7 @@ In practice, this section focuses on the risks themselves, not how the company a
 ### Notebooks
 
 ### Organization of the repo
-The repo is composed of two basic units: Four explanatory notebooks and an api with multiple endpoints with a [user guide](api/User Guide.ipynb).
+The repo is composed of two basic units: Four explanatory notebooks and an api with multiple endpoints with a [tutorial]("api/User Guide.ipynb").
 It also contains the dockerfiles and other files required for a deployment in docker, including a blank database.
 
 ### Raw Data Used
