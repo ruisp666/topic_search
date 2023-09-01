@@ -51,6 +51,7 @@ they are not excluded when tokenizing or encoding to preserve meaning. The fitte
 
 A suite of [tests](api/test_routes.py) was designed to ensure the functionality and consistency of the endpoints. As of this version, they all pass for the local version. 
 In the next version we will add tests specifically for the docker container.
+
 ### Further Development
 In the next versions of this web service we will add more unit and client tests. We will also add another model to consider a single topic modelling for all the sections.
 
