@@ -60,7 +60,7 @@ if os.environ.get('TOPIC_MODELS_PATH') is None:
     db_path = 'app/db/topics-url.db'
 else:
     print('We are in docker')
-    db_path = '/app/api/app/db/topics-db-docker.db'
+    db_path = 'app/db/data_docker.db'
 
 # Establish the connection and create the SQLite table if not existing
 connection = sqlite3.connect(db_path)
@@ -165,7 +165,7 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
 
 
 @app.get("/get_topics_url")
-async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm') -> \
+async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm', keep_all: bool = False) -> \
 Dict[str, list]:
     """Return the topics found in the text content of a given url
 
@@ -190,8 +190,11 @@ Dict[str, list]:
     topics_doc = {}
     for s, tm in topic_models.items():
         topics, _ = tm.transform(docs_str)
-        # Use set to keep uniques
-        topics_doc[s] = list(set(np.vectorize(topics_names_dict[s].get)(topics)))
+        # Use this the user can keep uniques or get all the topics for density analysis.
+        if keep_all:
+            topics_doc[s] = list(np.vectorize(topics_names_dict[s].get)(topics))
+        else:
+            topics_doc[s] = list(set(np.vectorize(topics_names_dict[s].get)(topics)))
     # Make strings of the lists
     data_to_insert = {}
     for s, k in mapping_db.items():

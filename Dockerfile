@@ -60,8 +60,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Copy the source code into the container.
 COPY . .
 COPY topic_models ./app
-RUN mkdir -p api/docker_db
-COPY api/app/db/data_docker.db api/docker_db/data_docker.db
+#RUN mkdir -p api/docker_db
+#COPY api/app/db/data_docker.db api/docker_db/data_docker.db
 # Expose the port that the application listens on.
 EXPOSE 8000
 # Switch to the non-privileged user to run the application.
