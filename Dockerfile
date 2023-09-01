@@ -56,16 +56,15 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
-# Switch to the non-privileged user to run the application.
-USER appuser
 
 # Copy the source code into the container.
 COPY . .
 COPY topic_models ./app
-COPY api/app/db/topics-url-db.db ./app/api/app/db/topics-url-db.db
-
+RUN mkdir -p api/docker_db
+COPY api/app/db/data_docker.db api/docker_db/data_docker.db
 # Expose the port that the application listens on.
 EXPOSE 8000
-
+# Switch to the non-privileged user to run the application.
+# USER appuser
 # Run the application.
 CMD uvicorn 'api.app:app' --host=0.0.0.0 --port=8000

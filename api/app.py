@@ -16,19 +16,15 @@ from bertopic import BERTopic
 import os
 sections = [f'Section{s}' for s in ['1', '1A', '7']]
 
-cwd = os.getcwd()
-print('cwd ', cwd)
-print('dir', os.listdir(cwd))
+
 
 
 
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     model_path = '/app/topic_models'
-    print(os.listdir(model_path))
 else:
     model_path = '../topic_models'
 
-print(model_path)
 topic_models = {s: BERTopic.load(os.path.join(model_path, f'topic_models_{s}'), embedding_model='all-MiniLM-L6-v2') for s in
                 sections}
 topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s, tm in
@@ -59,14 +55,16 @@ with open(os.path.join(assets_path, "topics_overtime.json"), "r") as f:
 
 app = FastAPI()
 
-if os.environ.get('TOPIC_MODELS_PATH') is not None:
-    db_path = '/app/api/app/db/topics-url.db'
-    print(os.listdir(model_path))
-else:
+if os.environ.get('TOPIC_MODELS_PATH') is None:
+    print('We are in local')
     db_path = 'app/db/topics-url.db'
+else:
+    print('We are in docker')
+    db_path = '/app/api/app/db/topics-db-docker.db'
 
 # Establish the connection and create the SQLite table if not existing
 connection = sqlite3.connect(db_path)
+
 cursor = connection.cursor()
 cursor.execute('''
           CREATE TABLE IF NOT EXISTS data
@@ -197,7 +195,6 @@ Dict[str, list]:
     # Make strings of the lists
     data_to_insert = {}
     for s, k in mapping_db.items():
-        print(s, k)
         data_to_insert[k] = ''.join(topics_doc[s])
     data_to_insert['url'] = url
     cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)',
