@@ -63,7 +63,7 @@ def test_update_database(url: str = "https://www.bloomberg.com"):
     requests.get(f"{host}/get_topics_url", params={'url': url, 'keep_all': f'{keep_all}'})
 
     # Check database was updated
-    conn = sqlite3.connect('app/db/topics-url-db.db')
+    conn = sqlite3.connect('db/topics-url-db.db')
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM data WHERE url="https://www.bloomberg.com"')
     result = cursor.fetchone()
