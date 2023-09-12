@@ -118,7 +118,7 @@ numexpr==2.8.4
 numpy==1.24.3
 orjson==3.9.2
 packaging==23.0
-pandas==1.5.3
+pandas~=2.0.3
 pandocfilters==1.5.0
 parso==0.8.3
 patsy==0.5.3
@@ -218,3 +218,5 @@ xxhash==2.0.2
 y-py==0.5.9
 yarl==1.8.1
 ypy-websocket==0.8.2
+
+dash~=2.13.0

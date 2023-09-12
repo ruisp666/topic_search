@@ -7,7 +7,6 @@ import pandas as pd
 
 client = TestClient(app)
 
-# Make sure the service is up before running the tests.
 
 def test_connection():
     """Tests if the service is up."""
@@ -59,7 +58,7 @@ def test_get_topics_sentiment():
 def test_update_database(url: str = "https://www.bloomberg.com"):
     """Tests if a given url is added to the database."""
     host = 'http://127.0.0.1:8080'
-    keep_all=False
+    keep_all = False
     requests.get(f"{host}/get_topics_url", params={'url': url, 'keep_all': f'{keep_all}'})
 
     # Check database was updated
