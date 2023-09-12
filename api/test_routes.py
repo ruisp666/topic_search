@@ -39,7 +39,7 @@ def test_get_topics_time_count():
     assert response.status_code == 200
     text = response.json()
     assert text['top_n'] == str(top_N)
-    # See if in fact we get 20 unique topics.
+    # Test if in fact we get 20 unique topics.
     df_test = pd.read_json(text['Section1'], orient='records')
     # We include the topic with the outliers.
     assert df_test['Topic'].nunique() == top_N + 1
