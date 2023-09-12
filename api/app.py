@@ -38,14 +38,7 @@ if os.environ.get('TOPIC_MODELS_PATH') is not None:
     assets_path = '/app/api/assets'
 else:
     assets_path = 'assets'
-# Load the topics_and_docs_sentiment json at the start of the application from the GCP bucket
-#logger.info('Loading topics_and_docs_sentiment')
 
-
-# text = requests.get(url=TOPICS_AND_DOCS_SENTIMENT_URL).json()
-# topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in text.items()}
-
-# Load the sections_topics_time json at the start of the application
 
 @app.on_event("startup")
 async def load_jsons():
@@ -53,18 +46,12 @@ async def load_jsons():
     sections_topics_time = json.load(open(os.path.join(assets_path, "topics_overtime.json")))
     return sections_topics_time
 
-# text = requests.get(url=TOPICS_AND_DOCS_SENTIMENT_URL).json()
-# topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in text.items()}
+# Load the topics_and_docs_sentiment json at the start of the application from the GCP bucket
+#text = requests.get(url=TOPICS_AND_DOCS_SENTIMENT_URL).json()
+text = json.load(open(os.path.join(assets_path, "topics_and_docs_sentiment.json")))
+topics_and_docs_sentiment = {k: pd.read_json(v, orient='records') for k, v in text.items()}
+True
 
-
-@app.get("/sections_topics_time")
-async def get_sections_topics_time():
-    return sections_topics_time
-
-
-@app.get("/topics_and_docs_sentiment")
-async def get_topics_and_docs_sentiment():
-    return topics_and_docs_sentiment
 
 
 if os.environ.get('TOPIC_MODELS_PATH') is None:
@@ -167,9 +154,9 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
         for s in topics_and_docs_sentiment:
             topics_and_docs_sentiment[s]['Timestamp'] = pd.to_datetime(topics_and_docs_sentiment[s]['Timestamp'],
                                                                        infer_datetime_format=True)
-            agg_sentiment[s] = topics_and_docs_sentiment[s].set_index('Timestamp').groupby(['Topic', 'Words', 'Name'])[
-                'sentiment_sigma_fsa'].resample(rule=freq).agg([np.mean, np.median]).reset_index(level=(0, 1, 2,))
-        response_json = {s: v.to_json(orient='records') for s, v in agg_sentiment.items()}
+            agg_sentiment[s] = topics_and_docs_sentiment[s].set_index('Timestamp').groupby(['Topic', 'Name'])[
+                'sentiment_sigma_fsa'].resample(rule=freq).agg([np.mean, np.median]).reset_index(level=(0, 1,))
+        response_json = {s: v.reset_index().to_json(orient='records', date_format='iso') for s, v in agg_sentiment.items()}
         response_json['frequency'] = freq
     return response_json
 
@@ -220,4 +207,4 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
 
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", port=8080, reload=True, workers=4)
+    uvicorn.run("app:app", port=8080, workers=1)
