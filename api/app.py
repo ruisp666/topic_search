@@ -8,7 +8,6 @@ from fastapi import FastAPI
 import pandas as pd
 import json
 import sqlite3
-
 from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 
@@ -54,10 +53,10 @@ app = FastAPI()
 
 if os.environ.get('TOPIC_MODELS_PATH') is None:
     print('We are in local')
-    db_path = 'app/db/topics-url-db.db'
+    db_path = 'db/topics-url-db.db'
 else:
     print('We are in docker')
-    db_path = 'app/db/data_docker.db'
+    db_path = 'db/data_docker.db'
 
 # Establish the connection and create the SQLite table if not existing
 connection = sqlite3.connect(db_path)
