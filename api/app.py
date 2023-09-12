@@ -1,7 +1,7 @@
 # api.py
 import logging
 from typing import Dict
-
+import requests
 import numpy as np
 import uvicorn
 from fastapi import FastAPI
@@ -10,7 +10,7 @@ import json
 import sqlite3
 from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
-
+from assets.buckets_location import SENTIMENT_LABELS_URL, TOPICS_AND_DOCS_SENTIMENT_URL, TOPICS_OVERTIME_URL
 from bertopic import BERTopic
 import os
 
@@ -21,14 +21,12 @@ if os.environ.get('TOPIC_MODELS_PATH') is not None:
 else:
     model_path = '../topic_models'
 
-topic_models = {s: BERTopic.load(os.path.join(model_path, f'topic_models_{s}'), embedding_model='all-MiniLM-L6-v2') for
-                s in
-                sections}
+topic_models = {s: BERTopic.load(os.path.join(model_path, f'topic_models_{s}'),
+                                 embedding_model='all-MiniLM-L6-v2') for s in sections}
 topics_names_dict = {s: dict(zip(tm.get_topic_info()['Topic'], tm.get_topic_info()['Name'])) for s, tm in
                      topic_models.items()}
-
 # Create a global logger
-logger = logging.getLogger('logger')
+logger = logging.getLogger('topics-api')
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 stream_handler = logging.StreamHandler()
@@ -37,13 +35,12 @@ logger.addHandler(stream_handler)
 
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     assets_path = '/app/api/assets'
-    print(os.listdir(model_path))
 else:
     assets_path = '../api/assets'
-# Load the topics_and_docs_sentiment json at the start of the application
-with open(os.path.join(assets_path, "topics_and_docs_sentiment.json"), "r") as f:
-    topics_and_docs_sentiment = json.load(f)
-    topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in topics_and_docs_sentiment.items()}
+
+# Load the topics_and_docs_sentiment json at the start of the application from the GCP bucket
+text = requests.get(url=TOPICS_AND_DOCS_SENTIMENT_URL).json()
+topics_and_docs_sentiment = {k: pd.read_json(v) for k, v in text.items()}
 
 # Load the sections_topics_time json at the start of the application
 with open(os.path.join(assets_path, "topics_overtime.json"), "r") as f:
@@ -52,10 +49,10 @@ with open(os.path.join(assets_path, "topics_overtime.json"), "r") as f:
 app = FastAPI()
 
 if os.environ.get('TOPIC_MODELS_PATH') is None:
-    print('We are in local')
+    logger.info('We are in local')
     db_path = 'db/topics-url-db.db'
 else:
-    print('We are in docker')
+    logger.info('We are in docker')
     db_path = 'db/data_docker.db'
 
 # Establish the connection and create the SQLite table if not existing
@@ -106,7 +103,7 @@ async def get_topics_time(freq: str = None, top_n: int = None) -> Dict[str, str]
         logger.info(f'Using {freq} to aggregate across time. This may take some time.')
         response_json['frequency'] = freq
         for s, v in sections_topics_time.items():
-            response[s] = v.set_index('Timestamp').groupby(['Topic', 'Words'])['Frequency'].resample(
+            response[s] = v.set_index('Timestamp').groupby(['Topic', 'Words', 'Name'])['Frequency'].resample(
                 rule=freq).sum().reset_index(level=(0, 1, 2))
     if top_n:
         logger.info(f'Top {top_n} topics will be returned. Topic -1 contains the outliers.')
