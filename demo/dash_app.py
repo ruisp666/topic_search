@@ -15,7 +15,12 @@ from dash import html, dcc
 from dash.dependencies import Input, Output
 import plotly.express as px
 from config import SECTIONS_DESCRIPTION, URL_API, SECTIONS_TITLE
+Addimport dash_loading_spinners as dls
 
+loader = dcc.Loading(
+    children=html.Div(id='loading-output'),
+    type='default'
+)
 
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     model_path = '/app/topic_models'
@@ -32,7 +37,7 @@ app.layout = html.Div([
     html.H1('SEC Filings: Topics and sentiment'),
     # Three tabs, topic-model-plot, topic-interdistance-plot, topic-overtime-plot
     dcc.Tabs(style={'width': '50%'}, children=[
-        dcc.Tab(label='Top Topics', children=[
+        dcc.Tab(label='Top Topics', children=[loader,
             dcc.Dropdown(id='section-dropdown', style={'width': '50%'},
                          options=[{'label': s, 'value': s} for s in SECTIONS_TITLE], value='Section1'),
             html.P(id='section_description', style={'width': '50%'}),
@@ -49,8 +54,13 @@ app.layout = html.Div([
             dcc.Graph(id='topic-time-plot')]),
 
         dcc.Tab(label='Topic sentiment over time', children=[
-            dcc.Dropdown(id='section-dropdown-time-sentiment', options=[{'label': s, 'value': s} for s in SECTIONS_TITLE],
-                       value='Section1'),
+            dcc.Dropdown(id='section-dropdown-time-sentiment',
+                         options=[{'label': s, 'value': s} for s in SECTIONS_TITLE],
+                         value='Section1'),
+            dcc.Checklist(id='adjust-to-fiscal-year',
+                          options=[{'label': 'Adjust to Fiscal Year', 'value': 1}],
+                          value=[]
+                          ),
             dcc.Graph(id='topic-time-sentiment-plot')]),
     ])
 ])
@@ -83,27 +93,31 @@ def display_intertopic_dist(section):
     Output('topic-time-plot', 'figure'),
     Input('section-dropdown-time', 'value'))
 def display_topic_time(section):
-    data = requests.get(url=os.path.join(URL_API,'get_topics_time'), params={'top_n': '5'}).json()
+    data = requests.get(url=os.path.join(URL_API, 'get_topics_time'), params={'top_n': '5'}).json()
     df = pd.read_json(data[section], orient='records')
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])
     df = df.set_index('Timestamp')
     fig = px.line(data_frame=df, y='Frequency', color='Name')
     fig.update_layout(
-    title='Frequency over Time',
-    xaxis_title='Snapshot Date',
-    yaxis_title='Frequency',
-    height=800, width=1200
+        title='Frequency over Time',
+        xaxis_title='Snapshot Date',
+        yaxis_title='Frequency',
+        height=800, width=1200
     )
     return fig
 
+
 @app.callback(
     Output('topic-time-sentiment-plot', 'figure'),
-    Input('section-dropdown-time-sentiment', 'value'))
-def display_topic_time_sentiment(section):
+    Input('section-dropdown-time-sentiment', 'value'),
+    Input('adjust-to-fiscal-year', 'value'))
+def display_topic_time_sentiment(section, adjust_flag):
     TOP_N = 10
-    data = requests.get(url=os.path.join(URL_API, 'get_topics_sentiment'), params={'freq': '3M'}).json()
+    data = requests.get(url=os.path.join(URL_API, 'get_topics_sentiment'), params={'freq': '1y'}).json()
     df = pd.read_json(data[section], orient='records')
     df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+    if adjust_flag:
+        df['Timestamp'] = pd.to_datetime(df['Timestamp'].dt.year - 1, format='%Y')
     df = df.set_index('Timestamp')
     fig = px.line(data_frame=df.loc[df.Topic.isin(range(1, TOP_N)), :], y='mean', color='Name')
     fig.update_layout(
@@ -112,8 +126,20 @@ def display_topic_time_sentiment(section):
         yaxis_title='Average sentiment',
         height=800, width=1200
     )
+    if adjust_flag:
+        fig.update_xaxes(
+            tickformat='%Y'
+        )
     return fig
 
+
+@app.callback(
+    Output("loading-output", "figure"),
+    [Input("loading-button", "n_clicks")],
+)
+def load_output(n):
+    # See note below
+    return get_new_graph(n)
 
 if __name__ == '__main__':
     app.run_server(debug=True)

@@ -5,4 +5,4 @@
 /data/
 /api/assets/topics_and_docs_sentiment.json
 *.pptx
-.idea/
+.idea/*
