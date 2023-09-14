@@ -50,9 +50,6 @@ async def load_jsons():
 #text = requests.get(url=TOPICS_AND_DOCS_SENTIMENT_URL).json()
 text = json.load(open(os.path.join(assets_path, "topics_and_docs_sentiment.json")))
 topics_and_docs_sentiment = {k: pd.read_json(v, orient='records') for k, v in text.items()}
-True
-
-
 
 if os.environ.get('TOPIC_MODELS_PATH') is None:
     logger.info('We are in local')
@@ -201,7 +198,6 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
     cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)',
                    data_to_insert)
     connection.commit()
-    connection.close()
 
     return topics_doc
 

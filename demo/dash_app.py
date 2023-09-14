@@ -13,14 +13,12 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc
 from dash.dependencies import Input, Output
+import plotly.graph_objects as go
 import plotly.express as px
 from config import SECTIONS_DESCRIPTION, URL_API, SECTIONS_TITLE
-Addimport dash_loading_spinners as dls
+import dash_loading_spinners as dls
 
-loader = dcc.Loading(
-    children=html.Div(id='loading-output'),
-    type='default'
-)
+
 
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     model_path = '/app/topic_models'
@@ -37,21 +35,24 @@ app.layout = html.Div([
     html.H1('SEC Filings: Topics and sentiment'),
     # Three tabs, topic-model-plot, topic-interdistance-plot, topic-overtime-plot
     dcc.Tabs(style={'width': '50%'}, children=[
-        dcc.Tab(label='Top Topics', children=[loader,
+        dcc.Tab(label='Top Topics', children=[
             dcc.Dropdown(id='section-dropdown', style={'width': '50%'},
                          options=[{'label': s, 'value': s} for s in SECTIONS_TITLE], value='Section1'),
             html.P(id='section_description', style={'width': '50%'}),
-            dcc.Graph(id='topic-model-plot')]),
+            dls.Clock(
+                dcc.Graph(id='topic-model-plot'))]),
 
         dcc.Tab(label='Intertopic Distances', children=[
             dcc.Dropdown(id='section-dropdown-1', options=[{'label': s, 'value': s} for s in SECTIONS_TITLE],
                          value='Section1'),
-            dcc.Graph(id='topic-interdistance-plot')]),
+            dls.Clock(
+                dcc.Graph(id='topic-interdistance-plot'))]),
 
         dcc.Tab(label='Topics over time', children=[
             dcc.Dropdown(id='section-dropdown-time', options=[{'label': s, 'value': s} for s in SECTIONS_TITLE],
                          value='Section1'),
-            dcc.Graph(id='topic-time-plot')]),
+            dls.Roller(
+                dcc.Graph(id='topic-time-plot'))]),
 
         dcc.Tab(label='Topic sentiment over time', children=[
             dcc.Dropdown(id='section-dropdown-time-sentiment',
@@ -61,15 +62,22 @@ app.layout = html.Div([
                           options=[{'label': 'Adjust to Fiscal Year', 'value': 1}],
                           value=[]
                           ),
-            dcc.Graph(id='topic-time-sentiment-plot')]),
+            dls.Hourglass(
+            dcc.Graph(id='topic-time-sentiment-plot'))]),
+
+        dcc.Tab(label='Topics in web addresses', children=[
+            dcc.Input(id='search-topics-url', placeholder='Enter URL...'),
+            dls.Roller(dcc.Graph(id='return-topics-url'))]),
     ])
 ])
 
 
+
+
 @app.callback(
     Output('topic-model-plot', 'figure'),
-    Output('section_description', 'children'),
-    Input('section-dropdown', 'value'))
+        Output('section_description', 'children'),
+            Input('section-dropdown', 'value'))
 def display_topic_model(section):
     fig = topic_models[section].visualize_barchart(title=f'<b>Topic word scores: {section} <b>')
     fig.update_layout(height=800, width=1200)
@@ -134,12 +142,51 @@ def display_topic_time_sentiment(section, adjust_flag):
 
 
 @app.callback(
-    Output("loading-output", "figure"),
-    [Input("loading-button", "n_clicks")],
-)
-def load_output(n):
-    # See note below
-    return get_new_graph(n)
+    Output('return-topics-url', 'figure'),
+    Input('search-topics-url', 'value'))
+def get_topics_url(url):
+    keep_all = True
+    text = requests.get(url=os.path.join(URL_API,"get_topics_url"), params={'url': url, 'keep_all': f'{keep_all}'}).json()
+    # text is a dictionary with keys the sections, and values the topics found per section.
+    topics_list = [topics  for section, topics_section in text.items() for topics in topics_section]
+    from collections import Counter
+    count = Counter(topics_list)
+    labels = list(count.keys())
+    values = list(count.values())
+
+    # Sort lists
+    values_sorted = sorted(values, reverse=False)
+    labels_sorted_ = [x for _,x in sorted(zip(values,labels), reverse=False)]
+    topic_mappings = {
+        '1309_lending practices_prudential standards_fdic nccob_banking': 'lending practices regulation',
+        '1751_ccpa_cfpb 8217_consumer financial_enforcement': 'consumer protection enforcement',
+        '178_bearing liabilities_net income_deposits borrowings_loans securities': 'bearing liabilities earnings',
+        '2013_cares act_programs facilities_provisions cares_consolidated appropriations': 'cares act provisions',
+        '2573_aenb_qualifying collateral_charge trust_lending trust': 'collateralized lending facility',
+        '3_libor_sofr_reference rates_usd libor': 'libor reference rates',
+        '557_funds rate_federal funds_federal reserve_actions federal': 'federal funds rate',
+        '786_spoe_spoe strategy_parent company_support agreement': 'parent support strategy',
+        '2462_secured funding_collateralized financings_gs bank_financings consolidated': 'collateralized financing assets',
+        '44_federal reserve_capital liquidity_regulatory capital_basel iii': 'capital liquidity regulation',
+        '846_backed securities_fasb financial_rmbs residential_capital financial': 'mortgage-backed securities',
+        '86_fdic_reserve fdic_submit resolution_orderly resolution': 'fdic resolution planning',
+        '878_monetary policy_monetary policies_instruments monetary_fiscal policies': 'monetary policy actions'
+    }
+    labels_sorted = [topic_mappings[t] for t in labels_sorted_]
+    fig = go.Figure(go.Bar(
+        x=values_sorted,
+        y=labels_sorted,
+        orientation='h',
+        marker_color='blue',
+    ))
+    fig.update_layout(
+        title=f'Topic frequency on {url}',
+        xaxis_title='Frequency',
+        yaxis_title='Topic (all sections merged)',
+        height=800, width=1200
+    )
+    return fig
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
