@@ -8,6 +8,7 @@ import pandas as pd
 import os
 
 from bertopic import BERTopic
+from collections import Counter
 
 import dash
 import dash_bootstrap_components as dbc
@@ -18,11 +19,11 @@ import plotly.express as px
 from config import SECTIONS_DESCRIPTION, DOCKER, SECTIONS_TITLE
 import dash_loading_spinners as dls
 
+# Change the URL according to whether we are in docker or not (this can be made better)
 if not DOCKER:
     URL_API = 'http://127.0.0.1:8080'
 else:
     URL_API = 'http://0.0.0.0:8000'
-print(URL_API)
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     model_path = '/app/topic_models'
 else:
@@ -151,7 +152,6 @@ def get_topics_url(url):
     text = requests.get(url=os.path.join(URL_API,"get_topics_url"), params={'url': url, 'keep_all': f'{keep_all}'}).json()
     # text is a dictionary with keys the sections, and values the topics found per section.
     topics_list = [topics  for section, topics_section in text.items() for topics in topics_section]
-    from collections import Counter
     count = Counter(topics_list)
     labels = list(count.keys())
     values = list(count.values())

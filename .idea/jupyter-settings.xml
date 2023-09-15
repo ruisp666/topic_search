@@ -18,6 +18,21 @@
             </JupyterConnectionParameters>
           </value>
         </entry>
+        <entry key="$USER_HOME$/Documents/Investment Project/text-analytics/.idea/text-analytics.iml">
+          <value>
+            <JupyterConnectionParameters>
+              <option name="managed" value="true" />
+              <option name="sdkHomePath" value="$USER_HOME$/anaconda3/envs/haystack_pipelines/bin/python" />
+            </JupyterConnectionParameters>
+          </value>
+        </entry>
+        <entry key="$USER_HOME$/Documents/Programming/Neural Networks/neural_networks.iml">
+          <value>
+            <JupyterConnectionParameters>
+              <option name="managed" value="true" />
+            </JupyterConnectionParameters>
+          </value>
+        </entry>
         <entry key="$APPLICATION_CONFIG_DIR$/projects/workspace/.idea/workspace.iml">
           <value>
             <JupyterConnectionParameters>

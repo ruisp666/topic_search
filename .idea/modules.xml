@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/GIC_case_study.iml" filepath="$PROJECT_DIR$/.idea/GIC_case_study.iml" />
+      <module fileurl="file://$USER_HOME$/DataspellProjects/topic_search/.idea/topic_search_app.iml" filepath="$USER_HOME$/DataspellProjects/topic_search/.idea/topic_search_app.iml" />
     </modules>
   </component>
 </project>

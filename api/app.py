@@ -62,10 +62,10 @@ else:
 connection = sqlite3.connect(db_path)
 
 cursor = connection.cursor()
-cursor.execute('''
-          CREATE TABLE IF NOT EXISTS data
+cursor.execute("""
+          CREATE TABLE IF NOT EXISTS data_topics
           (url text, topics_section1 text, topics_section2 text, topics_section3 text)
-          ''')
+          """)
 mapping_db = {'Section1': 'topics_section1', 'Section1A': 'topics_section2', 'Section7': 'topics_section3'}
 
 
@@ -175,7 +175,17 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
         Dictionary of JSON topic url data
 
     """
-    # cursor.execute('INSERT INTO data VALUES (:url)', url)
+    # Check if the url is present in the database
+    cursor = connection.cursor()
+    cursor.execute('SELECT * FROM data WHERE url=?', [url])
+    if cursor.fetchone() is None:
+        logger.info('URL not present in the database. Scraping, extracting topics, and inserting into the database')
+    else:
+        logger.info('URL exists in the database. Returning the topics')
+        cursor.execute('SELECT topics_section1, topics_section2, topics_section3 FROM data WHERE url=?', [url])
+
+        topics_doc = {s: cursor.fetchone()[i] for i, s in enumerate(sections)}
+        return topics_doc
     loader = WebBaseLoader(url)
     splitter = SentenceTransformersTokenTextSplitter(chunk_overlap=0,
                                                      model_name='sentence-transformers/all-MiniLM-L6-v2')
@@ -193,14 +203,13 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
     # Make strings of the lists
     data_to_insert = {}
     for s, k in mapping_db.items():
-        data_to_insert[k] = ''.join(topics_doc[s])
+        data_to_insert[k] = ','.join(topics_doc[s])
     data_to_insert['url'] = url
-    cursor.execute('INSERT INTO data VALUES (:url, :topics_section1, :topics_section2, :topics_section3)',
+    cursor.execute('INSERT INTO data_topics VALUES (:url, :topics_section1, :topics_section2, :topics_section3)',
                    data_to_insert)
     connection.commit()
-
     return topics_doc
 
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", port=8080, workers=1)
+    uvicorn.run("app:app", port=8080)
