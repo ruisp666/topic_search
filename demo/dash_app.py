@@ -15,11 +15,14 @@ from dash import html, dcc
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import plotly.express as px
-from config import SECTIONS_DESCRIPTION, URL_API, SECTIONS_TITLE
+from config import SECTIONS_DESCRIPTION, DOCKER, SECTIONS_TITLE
 import dash_loading_spinners as dls
 
-
-
+if not DOCKER:
+    URL_API = 'http://127.0.0.1:8080'
+else:
+    URL_API = 'http://0.0.0.0:8000'
+print(URL_API)
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
     model_path = '/app/topic_models'
 else:
@@ -39,19 +42,18 @@ app.layout = html.Div([
             dcc.Dropdown(id='section-dropdown', style={'width': '50%'},
                          options=[{'label': s, 'value': s} for s in SECTIONS_TITLE], value='Section1'),
             html.P(id='section_description', style={'width': '50%'}),
-            dls.Clock(
+            dls.Roller(
                 dcc.Graph(id='topic-model-plot'))]),
 
         dcc.Tab(label='Intertopic Distances', children=[
             dcc.Dropdown(id='section-dropdown-1', options=[{'label': s, 'value': s} for s in SECTIONS_TITLE],
                          value='Section1'),
-            dls.Clock(
-                dcc.Graph(id='topic-interdistance-plot'))]),
+            dls.Clock(dcc.Graph(id='topic-interdistance-plot'), speed_multiplier=0.5)]),
 
         dcc.Tab(label='Topics over time', children=[
             dcc.Dropdown(id='section-dropdown-time', options=[{'label': s, 'value': s} for s in SECTIONS_TITLE],
                          value='Section1'),
-            dls.Roller(
+            dls.Hourglass(
                 dcc.Graph(id='topic-time-plot'))]),
 
         dcc.Tab(label='Topic sentiment over time', children=[
