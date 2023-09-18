@@ -160,9 +160,10 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
 
 @app.get("/get_topics_url")
 async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm',
-                         keep_all: bool = False) -> \
+                         keep_all: bool = True) -> \
         Dict[str, list]:
     """Return the topics found in the text content of a given url
+    and persists the result in a database.
 
     Parameters
     ----------
@@ -177,14 +178,15 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
     """
     # Check if the url is present in the database
     cursor = connection.cursor()
-    cursor.execute('SELECT * FROM data WHERE url=?', [url])
+    cursor.execute('SELECT * FROM data_topics WHERE url=?', [url])
     if cursor.fetchone() is None:
+        keep_all = True # We save all the topics independent from the repetitions
         logger.info('URL not present in the database. Scraping, extracting topics, and inserting into the database')
     else:
         logger.info('URL exists in the database. Returning the topics')
-        cursor.execute('SELECT topics_section1, topics_section2, topics_section3 FROM data WHERE url=?', [url])
-
-        topics_doc = {s: cursor.fetchone()[i] for i, s in enumerate(sections)}
+        cursor.execute('SELECT topics_section1, topics_section2, topics_section3 FROM data_topics WHERE url=?', [url])
+        topics = cursor.fetchone()
+        topics_doc = {s: topics[i].split(',') for i, s in enumerate(sections)}
         return topics_doc
     loader = WebBaseLoader(url)
     splitter = SentenceTransformersTokenTextSplitter(chunk_overlap=0,
