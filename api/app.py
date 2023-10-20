@@ -11,12 +11,12 @@ import sqlite3
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
-from assets.buckets_location import SENTIMENT_LABELS_URL, TOPICS_AND_DOCS_SENTIMENT_URL, TOPICS_OVERTIME_URL
 from bertopic import BERTopic
 import os
 
 app = FastAPI(debug=True)
-origins = ["http://192.168.18.39:3001"]
+origins = ["http://192.168.18.39:3001", "http://localhost:3000",
+           "http://172.17.0.2:3000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -65,7 +65,7 @@ if os.environ.get('TOPIC_MODELS_PATH') is None:
     db_path = 'db/topics-url-db.db'
 else:
     logger.info('We are in docker')
-    db_path = 'db/data_docker.db'
+    db_path = '/app/api/db/topics_db.db'
 
 # Establish the connection and create the SQLite table if not existing
 connection = sqlite3.connect(db_path)

@@ -3,7 +3,6 @@
 # Comments are provided throughout this file to help you get started.
 # If you need more help, visit the Dockerfile reference guide at
 # https://docs.docker.com/engine/reference/builder/
-LABEL authors="sapereira"
 
 ARG PYTHON_VERSION=3.10
 FROM python:${PYTHON_VERSION}-slim
@@ -60,10 +59,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Copy the source code into the container.
 COPY . .
-COPY topic_models ./app
 # Expose the port that the application listens on.
-EXPOSE 8000
+EXPOSE 8037
 # Switch to the non-privileged user to run the application.
 # USER appuser
 # Run the application.
-CMD uvicorn 'api.app:app' --host=0.0.0.0 --port=8000
+CMD uvicorn 'api.app:app' --host=0.0.0.0 --port=8037
