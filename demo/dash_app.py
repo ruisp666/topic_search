@@ -177,4 +177,4 @@ def get_topics_url(url):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8050)

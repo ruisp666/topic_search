@@ -8,6 +8,7 @@ from fastapi import FastAPI
 import pandas as pd
 import json
 import sqlite3
+from fastapi.middleware.cors import CORSMiddleware
 from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 from assets.buckets_location import SENTIMENT_LABELS_URL, TOPICS_AND_DOCS_SENTIMENT_URL, TOPICS_OVERTIME_URL
@@ -15,6 +16,14 @@ from bertopic import BERTopic
 import os
 
 app = FastAPI(debug=True)
+origins = ["http://192.168.18.39:3001"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 sections = [f'Section{s}' for s in ['1', '1A', '7']]
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
@@ -214,4 +223,4 @@ async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/p
 
 
 if __name__ == '__main__':
-    uvicorn.run("app:app", port=8080)
+    uvicorn.run("app:app", port=8037)
