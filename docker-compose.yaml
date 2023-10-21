@@ -11,7 +11,7 @@ services:
   app_topics:
     image: app_topics
     ports:
-      - "8000:8000"
+      - "8037:8037"
     volumes:
       - type: volume
         source: topics-url-db

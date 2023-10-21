@@ -12,6 +12,9 @@ RUN apt-get update && \
     apt-get install -y g++ && \
     apt-get install -y libgmp3-dev
 
+# To be used with decouple for remote deployment
+ARG ALLOWED_ORIGINS
+ENV ALLOWED_ORIGINS=$ALLOWED_ORIGINS
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1

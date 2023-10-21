@@ -13,13 +13,14 @@ from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 from bertopic import BERTopic
 import os
+from decouple import config
 
 app = FastAPI(debug=True)
-origins = ["http://192.168.18.39:3001", "http://localhost:3000",
-           "http://172.17.0.2:3000"]
+ALLOWED_ORIGINS = config('ALLOWED_ORIGINS', default="http://192.168.18.39:3001,http://localhost:3000,"
+                                                    "http://172.17.0.2:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ALLOWED_ORIGINS.split(','),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
