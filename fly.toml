@@ -1,0 +1,26 @@
+# fly.toml app configuration file generated for sentiment-topics-sec on 2023-10-21T10:41:35+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "sentiment-topics-sec"
+primary_region = "sin"
+
+[build]
+
+[[services]]
+
+[services.concurrency]
+hard_limit = 25
+soft_limit = 20
+
+grace_period = "5m"  # Increase to 5 minutes
+
+[http_service]
+  internal_port = 8037
+  force_https = true
+
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
