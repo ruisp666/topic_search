@@ -12,6 +12,10 @@ RUN apt-get update && \
     apt-get install -y g++ && \
     apt-get install -y libgmp3-dev
 
+
+# clean unacessary installation files
+RUN rm -rf /var/lib/apt/lists/*
+
 # To be used with decouple for remote deployment
 ARG ALLOWED_ORIGINS
 ENV ALLOWED_ORIGINS=$ALLOWED_ORIGINS

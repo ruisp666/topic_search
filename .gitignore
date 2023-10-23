@@ -6,3 +6,4 @@
 /api/assets/topics_and_docs_sentiment.json
 *.pptx
 .idea/*
+/topic_models/fit_new_model_existing_embeddings.py
