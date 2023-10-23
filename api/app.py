@@ -172,18 +172,22 @@ async def get_topics_sentiment(freq: str = None) -> Dict[str, str]:
 async def get_topics_url(url: str = 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm',
                          keep_all: bool = True) -> \
         Dict[str, list]:
-    """Return the topics found in the text content of a given url
-    and persists the result in a database.
-
+    """
     Parameters
     ----------
-    url : str, optional
-        URL to scrape.
+    url : str
+        The URL of the webpage to scrape and extract topics from. Default is 'https://www.federalreserve.gov/newsevents/pressreleases/bcreg20230829b.htm'.
+    keep_all : bool
+        Determines whether to keep all topics or only unique topics. Use True if you are interested in density analysis.
 
     Returns
     -------
-    dict of {str : str}
-        Dictionary of JSON topic url data
+    Dict[str, list]
+        A dictionary where the keys represent different sections and the values are lists of topics extracted from the webpage.
+
+    Raises
+    ------
+    None
 
     """
     # Check if the url is present in the database
