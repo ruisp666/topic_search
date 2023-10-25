@@ -1,21 +1,24 @@
 # api.py
 import logging
 from typing import Dict
-import requests
 import numpy as np
 import uvicorn
-from fastapi import FastAPI
 import pandas as pd
 import json
 import sqlite3
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Request
+from starlette.middleware.base import BaseHTTPMiddleware
 from langchain.document_loaders import WebBaseLoader
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 from bertopic import BERTopic
 import os
 from decouple import config
 
+# Define the app object to
 app = FastAPI(debug=True)
+
+# Add allowed origins
 ALLOWED_ORIGINS = config('ALLOWED_ORIGINS', default="http://192.168.18.39:3001,http://localhost:3000,"
                                                     "http://172.17.0.2:3000")
 app.add_middleware(
@@ -25,6 +28,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Add Api Key
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.headers.get('API-Key') == 'your-api-key':
+            response = await call_next(request)
+        else:
+            raise HTTPException(status_code=400, detail='Invalid API key')
+        return response
+
+
+app.add_middleware(AuthMiddleware)
 
 sections = [f'Section{s}' for s in ['1', '1A', '7']]
 if os.environ.get('TOPIC_MODELS_PATH') is not None:
