@@ -3,7 +3,7 @@
 /topics_over_time_section1.csv
 /all_filings_and_sections.csv
 /data/
-/api/assets/topics_and_docs_sentiment.json
 *.pptx
 .idea/*
 /topic_models/fit_new_model_existing_embeddings.py
+/api/.env
